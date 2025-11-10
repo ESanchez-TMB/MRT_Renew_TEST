@@ -1,0 +1,292 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+
+namespace mrtRenew
+{
+    public partial class disclaimer : System.Web.UI.Page
+    {
+        public string totalAmount;
+        decimal cfee = 0.0M;
+        private string methodOfPayment;
+        private decimal netFee;
+        RClassLibrary.renewal r;
+        string CC_BANK = "TMB MRT Renew";
+        
+        protected void Page_Load(object sender, EventArgs e)
+        {
+            msgLBL.Visible = false;
+            r = (RClassLibrary.renewal)Session["renewal"];
+            if (r != null)
+            {
+                if (r.status.ToUpper().Trim() == "SUCCESS")
+                {
+                    Session["errMessage"] = "No changes are allowed after payment is made.";
+                    Server.Transfer("error.aspx", false);
+                }
+            }
+            else
+            {
+                Server.Transfer("login.aspx", false); //time out, no app record in session
+            }
+            methodOfPayment = r.methodOfPayment;
+            //
+
+            if (r != null)
+            {
+                populateControls();
+            }
+            else
+            {
+                msgLBL.Text = "Please Login again.";
+                msgLBL.ForeColor = System.Drawing.Color.Red;
+                msgLBL.Visible = true;
+                return;
+            }
+            
+        }
+        //       
+        protected void populateControls()
+        {
+             decimal sub = 0.0M;
+             try
+             {
+                 sub = r.CURRFEE;
+             }
+             catch { }
+             //                                DQ
+             if (r.lateFee > 0)              //DQ
+             {                               //DQ
+                 sub = sub + r.lateFee;      //DQ
+             }                               //DQ
+            //            
+            if (methodOfPayment == "CC")
+                CC_BANKlbl.Text = CC_BANK + " CC";
+            else
+                CC_BANKlbl.Text = CC_BANK + " ACH";
+
+            //           
+            decimal ach = (decimal)System.Web.HttpContext.Current.Application["ach"];
+            if ((ach == 0.0m) || (r.methodOfPayment == "CC"))
+            {
+                //cfee = App_Code.Utilities.getCfee(sub);
+                cfee = App_Code.Utilities.getCfee(r.CURRFEE + r.lateFee);  //10_10_16
+            }
+            else
+            {
+                cfee = (decimal)Application["ach"];
+            }
+            totalAmount = String.Format("{0:c}", (sub + cfee));            
+            
+
+        }
+
+        protected void continueBTN_Click(object sender, EventArgs e)
+        {
+            //create call callbacks
+            NICUSA.revList getRevCodes = new NICUSA.revList(RClassLibrary.DataAccess.getRevenueCodes2);
+            NICUSA.usasDelegate getUsas = new NICUSA.usasDelegate(RClassLibrary.DataAccess.getUsasInfo2);
+            NICUSA.dumpDelegate dumpDelegate = new NICUSA.dumpDelegate(RClassLibrary.DataAccess.dumpPPI);
+            //
+            if (!acceptCB.Checked)
+            {
+                msgLBL.Text = "You cannot proceed until you check this box.";
+                msgLBL.ForeColor = System.Drawing.Color.Red;
+                msgLBL.Visible = true;
+                return;
+            }
+            //
+            App_Code.order order = App_Code.order.createOrder(r);  //write 2 db,  2 get id #
+            //
+            if (order == null)
+            {
+                App_Code.DataAccess.log("Could not create order", "disclaimer continueBTN_Click");
+                msgLBL.Text = "Error: Problem creating order.";
+                msgLBL.ForeColor = System.Drawing.Color.Red;
+                msgLBL.Visible = true;
+                return;
+            }
+            if (order.order_id == 0)
+            {
+                App_Code.DataAccess.log("did not create order", "disclaimer app.continueBTN_Click");
+                msgLBL.Text = "Error: Problem creating order.";
+                msgLBL.ForeColor = System.Drawing.Color.Red;
+                msgLBL.Visible = true;
+                return;
+            }
+            //create item in order
+            List<NICUSA.orderItem> orderItems = new List<NICUSA.orderItem>();
+            NICUSA.orderItem item = new NICUSA.orderItem();
+            item.orderID = order.order_id;
+            item.item_cd = "MRT_REN";               
+            decimal sub = 0.0M;             
+            sub = r.CURRFEE;
+            //r.total_amount = sub.ToString();
+            item.orderItemID = 50;
+            item.description = "TMB MRT renew";
+            if (r.LicNum.Substring(0, 3) == "GMR")
+                item.sku = "6202";
+            else if (r.LicNum.Substring(0, 3) == "LMR")
+                item.sku = "6224";
+            //
+            item.unitprice = r.CURRFEE;
+            //
+            if (item.unitprice == 0)
+            {
+                App_Code.DataAccess.log("did not create order", "Zero amount");
+                msgLBL.Text = "Error: Problem creating order - cannot pay zero amount.";
+                msgLBL.ForeColor = System.Drawing.Color.Red;
+                msgLBL.Visible = true;
+                return;
+            }
+            //
+            item.quantity = 1;
+            orderItems.Add(item);
+            // add penalty (late) fee, if any 
+            if (r.lateFee > 0)
+            {
+                if (r.LicNum.Substring(0, 3) == "GMR")
+                {
+                    NICUSA.orderItem item_late = new NICUSA.orderItem();
+                    item_late.orderID = order.order_id;
+                    item_late.item_cd = "GMR LATE FEE";
+                    item_late.orderItemID = 61; //arbitrary number
+                    item_late.description = "TMB Radiologist Late Fee";
+                    item_late.unitprice = r.lateFee;
+                    item_late.sku = "6218";
+                    item_late.quantity = 1;
+                    orderItems.Add(item_late);
+                }
+                else if (r.LicNum.Substring(0, 3) == "LMR")
+                {
+                    NICUSA.orderItem item_late = new NICUSA.orderItem();
+                    item_late.orderID = order.order_id;
+                    item_late.item_cd = "LMR LATE FEE";
+                    item_late.orderItemID = 62; //arbitrary number
+                    item_late.description = "TMB Radiologist Late Fee";
+                    item_late.unitprice = r.lateFee;
+                    item_late.sku = "6225";
+                    item_late.quantity = 1;
+                    orderItems.Add(item_late);
+                }                
+            }
+            // add penalty (late) fee            
+            App_Code.DataAccess.insertOrderItems(orderItems);
+            //            
+            RClassLibrary.DataAccess.audit(order.order_id, "Success: create order: " + order.order_id.ToString(), 0);
+            //create nic order
+            string mode = App_Code.Rconfiguration.NICMode;
+            //
+
+            if (mode != "PROD")
+                {
+                try
+                    {
+                    System.Net.ServicePointManager.SecurityProtocol = (System.Net.SecurityProtocolType)3072;
+                    }
+
+                catch {}
+                }
+
+            NICUSA.NICorder no = new NICUSA.NICorder();
+            //
+            no.statecd = App_Code.Rconfiguration.NICstatecd;
+            no.merchantid = App_Code.Rconfiguration.NICmerchantid;
+            no.merchantkey = App_Code.Rconfiguration.NICmerchantkey;
+            no.servicecode = App_Code.Rconfiguration.NICservicecode;
+            no.localrefid = App_Code.Utilities.calculate_RefID_mrtRnl(order.order_id);
+            //
+            r.trace_number = no.localrefid;
+            //
+            no.uniquetransid = System.Guid.NewGuid().ToString();
+            no.hrefcancel = App_Code.Rconfiguration.NICcancel;
+            no.hrefduplicate = App_Code.Rconfiguration.NICduplicate;
+            no.hrefsuccess = App_Code.Rconfiguration.NICsuccess;
+            no.hreffailure = App_Code.Rconfiguration.NICfailure;
+            no.orderID = order.order_id;
+            no.orderItems = orderItems.ToArray<NICUSA.orderItem>();
+            //11_20-17
+            no.email = r.EMailAddr;
+            //
+            decimal total = 0;
+            foreach (NICUSA.orderItem oi in no.orderItems)
+            {
+                total = total + (oi.unitprice * oi.quantity);
+            }
+            //
+            no.cfee = cfee.ToString("f");
+            no.amount = (total + cfee).ToString("f");
+            r.totDue = total + cfee;
+
+            no.paytype = methodOfPayment;
+            //call preparePay -status
+            //App_Code.DataAccess.updateOrderStatus(order.order_id, 0); //preparePay           
+            RClassLibrary.DataAccess.updateOrderStatus(order.order_id, 0, "mrtRnl");
+            //write app
+            //string answer = App_Code.DataAccess.putApplDBwip(app);
+            string answer = App_Code.Utilities.putWIPrenewal(r);
+            if (answer != "success")
+            {
+                Session["error"] = "System incountered error writing to WIP from Disclaimer.";
+                Server.Transfer("error.aspx", false);
+            }
+            //write final
+            //answer = phyAppCL.DataAccess.putApplDBfinal(app, order.order_id);
+            answer = App_Code.DataAccess.putFINAL(r);
+
+            if (answer != "success")
+            { RClassLibrary.DataAccess.log("Error could not write to final: " + answer, "MRT renew disclaimer.aspx.cs"); }
+
+            // why is this necessary???? this is not really used 9_5_17
+            renewDB.Tb_work_inprogress wip = RClassLibrary.DataAccess.getWIP(r.LicNum);
+
+
+            try
+            {
+                //  prepare payment ***********************************
+                no.PreparePayment("BasicHttpBinding_IServiceWeb", getRevCodes, getUsas, dumpDelegate, wip.Work_inprogress_id);
+                // *****************************************************
+                //
+            }
+            catch (Exception err)
+            {
+                App_Code.DataAccess.log("Error, preparepay failed: "+err.Message.ToString()+"\n Source: "+err.Source+"\n Method:"+err.TargetSite, "disclaimer.aspx");
+                Session["error"] = "System encountered error while trying to pay.";
+                Server.Transfer("error.aspx", false);
+            }
+
+
+            RClassLibrary.DataAccess.updateOrderStatus(order.order_id, 1, "mrtRnl"); //preparePay
+            //handle results
+            if ((no.ppr.TOKEN != "0") && (no.ppr.TOKEN != null))
+            {
+                Session["token"] = no.ppr.TOKEN;
+                Session["orderID"] = order.order_id.ToString();
+                RClassLibrary.DataAccess.audit(order.order_id, " Success preparePay Token: " + no.ppr.TOKEN, 1); // 1/14/14 no.token to no.ppr.token
+                // eric's code 
+                try
+                {
+                    App_Code.DataAccess.put_outbound_payment_log(no);
+                }
+                catch (Exception exc)
+                {
+                App_Code.DataAccess.log("Error: " + exc.Message.ToString() + "\n Source: " + exc.Source + "\n Method:" + exc.TargetSite, "lmp.disclaimer.continueBTN_Click");
+                    //do nothing
+                }
+                //
+                Response.Redirect(App_Code.Rconfiguration.NICDefault + no.ppr.TOKEN);
+            }
+            else
+            {
+                App_Code.DataAccess.log("Error: from NIC preparepay: " + no.ppr.ERRORMESSAGE, "disclaimer.aspx");
+                Session["errMessage"] = no.ppr.ERRORMESSAGE;
+                Server.Transfer("error.aspx");
+            }
+
+        }
+        //
+    }
+}

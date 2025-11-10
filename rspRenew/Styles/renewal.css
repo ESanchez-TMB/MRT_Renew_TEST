@@ -1,0 +1,102 @@
+﻿body   
+{    
+    font-size: .80em;
+    font-family: "Helvetica Neue", "Lucida Grande", "Segoe UI", Arial, Helvetica, Verdana, sans-serif;
+    margin: 0px;
+    padding: 0px;
+    color: #696969;    
+	background-color: #dcf1fd;	
+}
+h2
+{	
+	font-size: 1.4em;    
+    color : Red ;
+}
+h3
+{ 
+    font-size: 1.2em;
+    color :Blue;
+}
+h4
+{ 
+    font-size: 1.1em;
+    color :Blue;
+}
+.red
+{
+	color : Red;
+}
+span.blue
+{
+    color : Blue;
+    font-size : larger;
+}
+span.required
+{
+    color : Red ;
+    font-size : large;
+}
+.greyOne
+{
+    margin : 5px 0px 5px 0px;
+    padding : 10px 10px 10px 10px;
+    border: solid 1px grey;
+}
+.right 
+{
+	margin: 12px 8px 8px 8px;
+	padding : 0px 0px 0px 12px;
+	width: 700px;  
+	float: left;
+  /*background-color: Olive;  */
+    background-color: #dcf1fd; 
+	/*border: solid 1px red;  */
+}
+
+.leftCol
+{   
+    margin: 12px 8px 8px 8px;
+    padding : 0px 0px 0px 12px;
+    width: 165px;
+    float :left ;
+    min-height: 200px;    
+   /* background-color: #e0ffff;  
+    background-color: #7799EE; */
+    background-color: #15689C;
+    border: solid 1px black;
+}
+.leftCol a
+{
+	color : White ;
+}
+.gridView td
+{
+	border: 1px solid black;
+}
+.blackBorder td
+{
+	border: 1px solid black;
+}
+
+.footer
+{
+    color: #4e5766;    
+    text-align: center;
+    line-height: normal;
+    background-color:  #608080;    
+}
+
+.silver
+{
+	background-color:#E6E6FA ;
+}
+.small
+{
+	 font-size: .75em;
+}
+li 
+{
+    padding: 0px 10px 10px 10px;
+}
+
+

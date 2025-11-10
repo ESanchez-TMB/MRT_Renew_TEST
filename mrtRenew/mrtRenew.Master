@@ -1,0 +1,75 @@
+﻿<%@ Master Language="C#" AutoEventWireup="true" CodeBehind="mrtRenew.master.cs" Inherits="mrtRenew.MrtRenewMaster" %>
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head id="Head1" runat="server">
+    <title></title>
+     <link type ="text/css" rel="Stylesheet" href="Styles/renewal.css" media ="screen" />
+    <asp:ContentPlaceHolder ID="ContentPlaceHolder2" runat="server">
+    </asp:ContentPlaceHolder>
+    <script type="text/javascript" src="Scripts/jquery-1.4.1.js"></script>
+     <script type="text/javascript" src="Scripts/jquery.popupWindow.js" > </script>
+    <script type="text/javascript">
+
+        function AdjustColumnsHeight() {
+            //alert("in AdjustColumnsHeight");
+            // get a reference to the three (2) DIVS that make up the columns
+            var rightCol = window.document.getElementById('right');
+            var leftCol = window.document.getElementById('leftCol');
+            // calculate the max height           
+            var hLeftCol = leftCol.offsetHeight;
+            var hRightCol = rightCol.offsetHeight;
+            var maxHeight = Math.max(Math.max(hLeftCol, hRightCol));
+            // set the height of all 3 DIVS to the max height           
+            leftCol.style.height = maxHeight + 'px';
+            rightCol.style.height = maxHeight + 'px';
+            // Show the footer
+            window.document.getElementById('footer').style.visibility = 'inherit';
+        }
+
+        window.onload = function () { AdjustColumnsHeight(); } 
+           
+    </script>
+    <asp:ContentPlaceHolder ID="head" runat="server">
+    </asp:ContentPlaceHolder>
+</head>
+<body>
+    <form id="form1" runat="server">
+    <%--<div class="Window">--%>
+  <div class="Header">
+         <%--<img src="/images/TopBarTMB.jpg" alt="Texas Medical Board" style="width:100%; height:150px; border:0px;padding:0px;margin:0px"   />--%>
+         <div class="Header" style="background-image:url(images/topBarTMB2.jpg);"  >
+         <img src="images/TopBarTMB.jpg" alt="Texas Medical Board" style="width:750px; height:140px"   />
+  </div>
+    <div class="Main" >
+   <%-- <div class="wrapper1" >--%>
+      <div id="leftCol" class="leftCol">
+        <div class="Container">
+        <h3>Steps</h3>          
+          <table id="StepTable" border="0" cellpadding="0" cellspacing="1" width="200px" style ="color :White " >
+          <tr><td> <a   href ="login.aspx" >Login</a><br />          </td></tr>         
+          <tr><td> <a   href ="addresses.aspx" >Addresses</a><br />  </td></tr>
+          <tr><td> <a   href ="questions.aspx" >Questions</a><br />  </td></tr> 
+          <tr><td> <a   href ="review.aspx" >Review</a><br />        </td></tr> 
+          </table>       
+        </div>
+      </div> <%--left--%>
+      <div  id="right" class="right">        
+        <div class="Contents">                
+          <asp:ContentPlaceHolder ID="ContentPlaceHolder1" runat="server">
+          </asp:ContentPlaceHolder>
+        </div>
+      </div> <%--main--%>
+      <div id ="footer"class ="footer" style ="clear :both;">     
+      <a href="http://www.tmb.state.tx.us/agency/accessibility.php">Accessibility Policy</a>
+      
+
+      </div>
+     <%-- </div> <%--wrapper1-->--%>
+    </div>   <%--Main--%>
+  </div>
+    </form>
+</body>
+</html>
